@@ -143,6 +143,34 @@
         }
     }
 
+// 🎯 ฟังก์ชันเช็กคิวเก่า + เช็กว่าเลยเวลานัดหรือยัง
+    function checkExistingBooking() {
+        const saved = localStorage.getItem(`booking_${userProfile.userId}`);
+        if (saved) {
+            const data = JSON.parse(saved);
+            
+            // สร้างเวลาปัจจุบัน และเวลานัดหมายมาเปรียบเทียบกัน
+            const now = new Date();
+            const bookingDateTime = new Date(`${data.rawDate}T${data.time}:00`);
+
+            // ⚡ ถ้าเวลาปัจจุบัน เลยเวลานัดหมายไปแล้ว
+            if (now > bookingDateTime) {
+                // ล้างข้อมูลเก่าทิ้ง
+                localStorage.removeItem(`booking_${userProfile.userId}`);
+                // แจ้งเตือนลูกค้า
+                alert("เลยเวลานัดหมายเดิมแล้ว กรุณาทำการนัดหมายใหม่ค่ะ");
+                // แสดงหน้าฟอร์มจองปกติเพื่อให้จองใหม่
+                document.getElementById("booking-form").style.display = "block";
+                document.getElementById("summary-section").style.display = "none";
+            } else {
+                // ถ้ายังไม่ถึงเวลานัด ให้แสดงหน้าสรุปคิวเดิมตามปกติ
+                document.getElementById("booking-form").style.display = "none";
+                document.getElementById("summary-section").style.display = "block";
+                document.getElementById("summaryText").innerHTML = `📅 <b>วันที่นัด:</b> ${data.displayDate}<br>⏰ <b>เวลานัด:</b> ${data.time} น.`;
+            }
+        }
+    }    
+    
     function showEditForm() {
         document.getElementById("booking-form").style.display = "block";
         document.getElementById("summary-section").style.display = "none";
