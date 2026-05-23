@@ -42,7 +42,6 @@
 
     <div id="booking-form">
         <label>เลือกวันที่นัดหมาย:</label>
-        <!-- เพิ่ม onchange ให้ไปสร้างปุ่มเวลาใหม่ตามวันที่เลือก -->
         <input type="date" id="datePicker" onchange="handleDateChange()">
 
         <label>เลือกเวลา:</label>
@@ -61,9 +60,23 @@
 </div>
 
 <script>
-    const times = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00"];
+    // 🎯 ขยายรอบเวลาให้จองได้จนถึงเวลา 22:00 น.
+    const times = [
+        "09:00", "10:00", "11:00", "12:00", 
+        "13:00", "14:00", "15:00", "16:00", 
+        "17:00", "18:00", "19:00", "20:00", 
+        "21:00", "22:00"
+    ];
     let selectedTime = "";
     let userProfile = null;
+
+    function getTodayString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
 
     async function initLIFF() {
         try {
@@ -75,9 +88,13 @@
                 document.getElementById("userName").innerText = userProfile.displayName;
                 document.getElementById("userImg").src = userProfile.pictureUrl;
                 
-                // 🎯 ตั้งค่าให้ปฏิทินเลือกอดีตไม่ได้ (ต่ำสุดคือวันนี้)
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById("datePicker").min = today;
+                // ตั้งค่าเริ่มต้นของปฏิทินให้เป็น "วันนี้" โดยอัตโนมัติเพื่อความสะดวก
+                const today = getTodayString();
+                const datePicker = document.getElementById("datePicker");
+                datePicker.min = today;
+                if (!datePicker.value) {
+                    datePicker.value = today;
+                }
                 
                 renderTimeButtons();
                 checkExistingBooking();
@@ -94,16 +111,14 @@
         return `${day}/${month}/${thaiYear}`;
     }
 
-    // 🎯 ฟังก์ชันสร้างปุ่มเวลา โดยตัดเวลาในอดีตออกหากเลือกเป็นวันนี้
     function renderTimeButtons() {
         const grid = document.getElementById("timeGrid");
         grid.innerHTML = "";
         
         const selectedDate = document.getElementById("datePicker").value;
-        const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
+        const todayStr = getTodayString();
         
-        // ดึงชั่วโมงและนาทีปัจจุบันมาเปรียบเทียบ (เช่น "14:30")
+        const now = new Date();
         const currentHours = String(now.getHours()).padStart(2, '0');
         const currentMinutes = String(now.getMinutes()).padStart(2, '0');
         const currentTimeStr = `${currentHours}:${currentMinutes}`;
@@ -111,9 +126,9 @@
         let visibleButtonsCount = 0;
 
         times.forEach(t => {
-            // ถ้าเลือกวันวันนี้ และเวลารอบนัดน้อยกว่าหรือเท่ากับเวลาปัจจุบัน -> ให้ซ่อนไปเลย
+            // หากเลือกวันปัจจุบัน ปุ่มเวลาใดที่เลยเวลาปัจจุบันไปแล้ว จะไม่ถูกนำมาแสดง
             if (selectedDate === todayStr && t <= currentTimeStr) {
-                return; // ข้ามการสร้างปุ่มนี้
+                return; 
             }
 
             visibleButtonsCount++;
@@ -128,34 +143,48 @@
             grid.appendChild(btn);
         });
 
-        // ถ้าวันนี้ไม่มีรอบเวลาเหลือแล้ว ให้ขึ้นแจ้งเตือนลูกค้า
         if (visibleButtonsCount === 0 && selectedDate !== "") {
             grid.innerHTML = `<div class="no-time-msg">❌ รอบเวลาสำหรับวันนี้หมดแล้ว<br>กรุณาเลือกวันถัดไปค่ะ</div>`;
         }
     }
 
     function handleDateChange() {
-        selectedTime = ""; // ล้างเวลาเก่าที่เคยเลือกไว้
-        renderTimeButtons(); // วาดปุ่มเวลาใหม่ตามเงื่อนไขวัน
+        const datePicker = document.getElementById("datePicker");
+        const selectedDate = datePicker.value;
+        const todayStr = getTodayString();
+
+        if (selectedDate < todayStr && selectedDate !== "") {
+            alert("ไม่สามารถเลือกวันที่ย้อนหลังได้ค่ะ ระบบจะปรับเป็นวันปัจจุบันให้โดยอัตโนมัติ");
+            datePicker.value = todayStr;
+        }
+
+        selectedTime = ""; 
+        renderTimeButtons(); 
     }
 
     function handleBooking() {
         const dateInput = document.getElementById("datePicker").value;
+        const todayStr = getTodayString();
+
         if (!dateInput || !selectedTime) {
             alert("กรุณาเลือกวันและเวลาให้ครบถ้วนครับ");
             return;
         }
 
-        // ตรวจสอบความปลอดภัยอีกชั้นก่อนกดบันทึก
+        if (dateInput < todayStr) {
+            alert("ไม่สามารถจองวันย้อนหลังได้ กรุณาเลือกวันที่ใหม่ค่ะ");
+            handleDateChange();
+            return;
+        }
+
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
         const currentHours = String(now.getHours()).padStart(2, '0');
         const currentMinutes = String(now.getMinutes()).padStart(2, '0');
         const currentTimeStr = `${currentHours}:${currentMinutes}`;
 
         if (dateInput === todayStr && selectedTime <= currentTimeStr) {
             alert("เวลานี้เลยกำหนดแล้ว กรุณาเลือกเวลาอื่นใหม่ค่ะ");
-            handleDateChange(); // รีเซ็ตปุ่มเวลาใหม่ทันที
+            handleDateChange(); 
             return;
         }
 
@@ -203,7 +232,7 @@
     function showEditForm() {
         document.getElementById("booking-form").style.display = "block";
         document.getElementById("summary-section").style.display = "none";
-        renderTimeButtons(); // อัปเดตปุ่มเวลาอีกครั้งเผื่อเวลาเปลี่ยนระหว่างหน้าจอ
+        renderTimeButtons(); 
     }
 
     initLIFF();
