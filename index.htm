@@ -14,8 +14,11 @@
         .profile-img { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--line-green); }
         
         label { display: block; margin-top: 15px; font-weight: bold; }
-        input[type="date"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
-        input[type="date"]:focus { border-color: var(--line-green); }
+        input[type="date"], textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; font-family: inherit; }
+        input[type="date"]:focus, textarea:focus { border-color: var(--line-green); }
+        
+        /* สไตล์สำหรับช่องรายละเอียดการจอง */
+        textarea { resize: vertical; min-height: 80px; }
         
         .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
         .time-btn { padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; transition: 0.3s; font-size: 14px; }
@@ -26,7 +29,7 @@
         
         #summary-section { display: none; text-align: center; border-top: 2px dashed #eee; margin-top: 20px; padding-top: 20px; }
         .badge { background: #e8f5e9; color: #2e7d32; padding: 5px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; }
-        .summary-box { background: #f9f9f9; padding: 15px; border-radius: 10px; margin: 15px 0; line-height: 1.6; }
+        .summary-box { background: #f9f9f9; padding: 15px; border-radius: 10px; margin: 15px 0; line-height: 1.6; text-align: left; }
         .no-time-msg { grid-column: span 3; text-align: center; color: #ff3b30; padding: 10px; font-size: 14px; }
     </style>
 </head>
@@ -47,6 +50,9 @@
         <label>เลือกเวลา:</label>
         <div class="time-grid" id="timeGrid"></div>
 
+        <label>รายละเอียดเพิ่มเติม:</label>
+        <textarea id="bookingDetail" placeholder="ระบุรายละเอียด เช่น ลายที่ต้องการ, ไซส์เล็บ (S/M/L) หรือบริการเพิ่มเติม..."></textarea>
+
         <button class="btn-confirm" id="confirmBtn" onclick="handleBooking()">ยืนยันการจอง</button>
     </div>
 
@@ -60,7 +66,6 @@
 </div>
 
 <script>
-    // 🎯 ขยายรอบเวลาให้จองได้จนถึงเวลา 22:00 น.
     const times = [
         "09:30", "10:00", "11:00", "12:00", 
         "13:00", "14:00", "15:00", "16:00", 
@@ -87,7 +92,6 @@
                 document.getElementById("userName").innerText = userProfile.displayName;
                 document.getElementById("userImg").src = userProfile.pictureUrl;
                 
-                // ตั้งค่าเริ่มต้นของปฏิทินให้เป็น "วันนี้" โดยอัตโนมัติเพื่อความสะดวก
                 const today = getTodayString();
                 const datePicker = document.getElementById("datePicker");
                 datePicker.min = today;
@@ -125,7 +129,6 @@
         let visibleButtonsCount = 0;
 
         times.forEach(t => {
-            // หากเลือกวันปัจจุบัน ปุ่มเวลาใดที่เลยเวลาปัจจุบันไปแล้ว จะไม่ถูกนำมาแสดง
             if (selectedDate === todayStr && t <= currentTimeStr) {
                 return; 
             }
@@ -134,6 +137,9 @@
             const btn = document.createElement("button");
             btn.className = "time-btn";
             btn.innerText = t;
+            // คงสถานะ Active ไว้หากเคยกดเลือกไว้แล้ว
+            if (t === selectedTime) btn.classList.add('active');
+            
             btn.onclick = () => {
                 document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
@@ -164,6 +170,7 @@
     function handleBooking() {
         const dateInput = document.getElementById("datePicker").value;
         const todayStr = getTodayString();
+        const detailInput = document.getElementById("bookingDetail").value.trim(); // 🎯 ดึงค่ารายละเอียด
 
         if (!dateInput || !selectedTime) {
             alert("กรุณาเลือกวันและเวลาให้ครบถ้วนครับ");
@@ -188,17 +195,21 @@
         }
 
         const formattedDate = formatDateDisplay(dateInput);
+        
+        // 🎯 บันทึกข้อมูลที่มีรายละเอียดลง localStorage
         const bookingData = { 
             rawDate: dateInput, 
             displayDate: formattedDate, 
-            time: selectedTime 
+            time: selectedTime,
+            detail: detailInput || "ไม่มีรายละเอียดเพิ่มเติม"
         };
 
         localStorage.setItem(`booking_${userProfile.userId}`, JSON.stringify(bookingData));
 
+        // 🎯 ปรับการส่งข้อความเข้า LINE แชทให้มีรายละเอียดการจอง
         liff.sendMessages([{
             type: 'text',
-            text: `📢 ยืนยันนัดหมายสำเร็จ!\n👤 คุณ: ${userProfile.displayName}\n📅 วันที่: ${formattedDate}\n⏰ เวลา: ${selectedTime} น.\n\nหากต้องการแก้ไขหรือดูข้อมูลคิว สามารถกดเข้าเมนูจองคิวเดิมได้ตลอดเวลาค่ะ`
+            text: `📢 ยืนยันนัดหมายสำเร็จ!\n👤 คุณ: ${userProfile.displayName}\n📅 วันที่: ${formattedDate}\n⏰ เวลา: ${selectedTime} น.\n📝 รายละเอียด: ${bookingData.detail}\n\nหากต้องการแก้ไขหรือดูข้อมูลคิว สามารถกดเข้าเมนูจองคิวเดิมได้ตลอดเวลาค่ะ`
         }]).then(() => {
             alert("บันทึกข้อมูลเรียบร้อยแล้ว");
             liff.closeWindow();
@@ -217,11 +228,18 @@
                 alert("เลยเวลานัดหมายเดิมแล้ว กรุณาทำการนัดหมายใหม่ค่ะ");
                 document.getElementById("booking-form").style.display = "block";
                 document.getElementById("summary-section").style.display = "none";
+                document.getElementById("bookingDetail").value = ""; // ล้างช่องข้อมูล
                 renderTimeButtons();
             } else {
                 document.getElementById("booking-form").style.display = "none";
                 document.getElementById("summary-section").style.display = "block";
-                document.getElementById("summaryText").innerHTML = `📅 <b>วันที่นัด:</b> ${data.displayDate}<br>⏰ <b>เวลานัด:</b> ${data.time} น.`;
+                
+                // 🎯 แสดงข้อมูลสรุปพร้อมรายละเอียดในหน้าตรวจสอบสิทธิ์
+                document.getElementById("summaryText").innerHTML = `
+                    📅 <b>วันที่นัด:</b> ${data.displayDate}<br>
+                    ⏰ <b>เวลานัด:</b> ${data.time} น.<br>
+                    📝 <b>รายละเอียด:</b> ${data.detail || 'ไม่มีรายละเอียดเพิ่มเติม'}
+                `;
             }
         } else {
             renderTimeButtons();
@@ -229,6 +247,13 @@
     }
 
     function showEditForm() {
+        const saved = localStorage.getItem(`booking_${userProfile.userId}`);
+        if (saved) {
+            const data = JSON.parse(saved);
+            document.getElementById("datePicker").value = data.rawDate;
+            selectedTime = data.time;
+            document.getElementById("bookingDetail").value = data.detail === "ไม่มีรายละเอียดเพิ่มเติม" ? "" : data.detail;
+        }
         document.getElementById("booking-form").style.display = "block";
         document.getElementById("summary-section").style.display = "none";
         renderTimeButtons(); 
