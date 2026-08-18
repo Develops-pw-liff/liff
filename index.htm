@@ -7,42 +7,86 @@
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         :root { --line-green: #06C755; --dark-gray: #333; --gold: #d4af37; }
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f9; color: var(--dark-gray); margin: 0; padding: 20px; }
-        .container { max-width: 400px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        * { box-sizing: border-box; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: #f4f4f9; 
+            color: var(--dark-gray); 
+            margin: 0; 
+            padding: 20px; 
+        }
+        
+        .container { 
+            max-width: 400px; 
+            margin: auto; 
+            background: #ffffff; 
+            padding: 20px; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+        }
+        
         h2 { color: var(--line-green); text-align: center; margin-bottom: 5px; }
         .sub-title { text-align: center; font-size: 13px; color: #777; margin-bottom: 20px; }
         .profile-section { text-align: center; margin-bottom: 15px; }
         .profile-img { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--line-green); object-fit: cover; }
         
-        label { display: block; margin-top: 15px; font-weight: bold; font-size: 14px; }
+        label { display: block; margin-top: 15px; font-weight: bold; font-size: 14px; color: #333333; }
         
-        /* ตกแต่ง Select & Inputs ให้รองรับการแสดงผลทุกอุปกรณ์ */
-        input[type="date"], select, textarea { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            box-sizing: border-box; 
-            font-size: 15px; 
-            outline: none; 
-            font-family: inherit; 
-            margin-top: 5px; 
-            background-color: #fff;
-            color: #333;
-            display: block !important; /* บังคับให้แสดงผล */
+        /* 🛠️ แก้ไขสไตล์ Select / Input ป้องกันปัญหา Dark Mode และปัญหาการแสดงผลใน LINE WebView */
+        select, input[type="date"], textarea { 
+            display: block !important;
+            visibility: visible !important;
+            width: 100% !important; 
+            padding: 12px !important; 
+            border: 1px solid #ccc !important; 
+            border-radius: 8px !important; 
+            font-size: 15px !important; 
+            outline: none !important; 
+            font-family: inherit !important; 
+            margin-top: 5px !important; 
+            background-color: #ffffff !important;
+            color: #111111 !important;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        /* ใส่ไอคอนลูกศรให้ Dropdown เพื่อความชัดเจน */
+        .select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .select-wrapper::after {
+            content: "▼";
+            font-size: 12px;
+            color: #666;
+            position: absolute;
+            right: 15px;
+            top: 55%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        /* ตกแต่ง ตัวเลือกภายใน Option ให้มีสีชัดเจน */
+        select option {
+            background-color: #ffffff !important;
+            color: #111111 !important;
+            padding: 10px;
         }
         
-        input[type="date"]:focus, select:focus, textarea:focus { border-color: var(--line-green); }
+        input[type="date"]:focus, select:focus, textarea:focus { border-color: var(--line-green) !important; }
         textarea { resize: vertical; min-height: 70px; }
         
         .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
-        .time-btn { padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; transition: 0.3s; font-size: 14px; }
+        .time-btn { padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; transition: 0.3s; font-size: 14px; color: #333; }
         .time-btn.active { background: var(--line-green); color: white; border-color: var(--line-green); font-weight: bold; }
 
         .btn-confirm { width: 100%; background: var(--line-green); color: white; border: none; padding: 15px; border-radius: 10px; font-size: 18px; font-weight: bold; margin-top: 25px; cursor: pointer; box-shadow: 0 4px 10px rgba(6,199,85,0.3); }
         .btn-edit { background: #ff9800; margin-top: 10px; box-shadow: none; }
         
-        #booking-form { display: block; } /* มั่นใจว่าฟอร์มเริ่มที่การแสดงผล */
         #summary-section { display: none; text-align: center; border-top: 2px dashed #eee; margin-top: 20px; padding-top: 20px; }
         .badge { background: #e8f5e9; color: #2e7d32; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; }
         .summary-box { background: #f9f9f9; padding: 15px; border-radius: 10px; margin: 15px 0; line-height: 1.6; text-align: left; font-size: 14px; border-left: 4px solid var(--line-green); }
@@ -60,29 +104,29 @@
     <h2>Krongpech Beauty</h2>
     <div class="sub-title">ระบบจองคิวนัดหมายทำเล็บ & สปา</div>
 
-    <!-- ฟอร์มการจอง -->
     <div id="booking-form">
-        <label for="serviceType">เลือกตัวเลือกบริการหลัก:</label>
-        <select id="serviceType">
-            <option value="💅 ทำเล็บเจลทั่วไป / Custom">💅 ทำเล็บเจลทั่วไป / Custom Design</option>
-            <option value="🔮 ทำสีเล็บมงคลเสริมดวง">🔮 ทำสีเล็บมงคลเสริมดวง (รับฟรี! อัปเกรดท็อปเงา)</option>
-            <option value="✨ สั่ง/ลองเล็บเจลปลอมแฮนด์เมด">✨ สั่ง/ลองเล็บเจลปลอมแฮนด์เมด</option>
-            <option value="💆‍♀️ พรีเมียมสปา / บริการอื่นๆ">💆‍♀️ พรีเมียมสปา / บริการอื่นๆ</option>
-        </select>
+        <label>เลือกตัวเลือกบริการหลัก:</label>
+        <div class="select-wrapper">
+            <select id="serviceType">
+                <option value="💅 ทำเล็บเจลทั่วไป / Custom">💅 ทำเล็บเจลทั่วไป / Custom Design</option>
+                <option value="🔮 ทำสีเล็บมงคลเสริมดวง">🔮 ทำสีเล็บมงคลเสริมดวง (รับฟรี! อัปเกรดท็อปเงา)</option>
+                <option value="✨ สั่ง/ลองเล็บเจลปลอมแฮนด์เมด">✨ สั่ง/ลองเล็บเจลปลอมแฮนด์เมด</option>
+                <option value="💆‍♀️ พรีเมียมสปา / บริการอื่นๆ">💆‍♀️ พรีเมียมสปา / บริการอื่นๆ</option>
+            </select>
+        </div>
 
-        <label for="datePicker">เลือกวันที่นัดหมาย:</label>
+        <label>เลือกวันที่นัดหมาย:</label>
         <input type="date" id="datePicker" onchange="handleDateChange()">
 
         <label>เลือกเวลา:</label>
         <div class="time-grid" id="timeGrid"></div>
 
-        <label for="bookingDetail">รายละเอียดเพิ่มเติม:</label>
+        <label>รายละเอียดเพิ่มเติม:</label>
         <textarea id="bookingDetail" placeholder="ระบุลายที่ชอบ, ไซส์เล็บ (S/M/L) หรือวันเกิดสำหรับเช็กสีมงคล..."></textarea>
 
         <button class="btn-confirm" id="confirmBtn" onclick="handleBooking()">ยืนยันการจองคิว</button>
     </div>
 
-    <!-- หน้าแสดงผลสรุป -->
     <div id="summary-section">
         <span class="badge">✨ ตรวจสอบข้อมูลนัดหมายของคุณ</span>
         <div class="summary-box">
@@ -112,9 +156,9 @@
     async function initLIFF() {
         const today = getTodayString();
         const datePicker = document.getElementById("datePicker");
-        datePicker.min = today;
-        if (!datePicker.value) {
-            datePicker.value = today;
+        if (datePicker) {
+            datePicker.min = today;
+            if (!datePicker.value) datePicker.value = today;
         }
 
         try {
@@ -127,11 +171,11 @@
                 if (liff.isInClient()) {
                     liff.login();
                 } else {
-                    document.getElementById("userName").innerText = "ผู้เข้าชมทั่วไป (Browser)";
+                    document.getElementById("userName").innerText = "ผู้เข้าชมทั่วไป";
                 }
             }
         } catch (error) {
-            console.error("LIFF Init Error:", error);
+            console.error("LIFF Error:", error);
             document.getElementById("userName").innerText = "ผู้เข้าชมทั่วไป";
         }
 
@@ -148,6 +192,7 @@
 
     function renderTimeButtons() {
         const grid = document.getElementById("timeGrid");
+        if (!grid) return;
         grid.innerHTML = "";
         
         const selectedDate = document.getElementById("datePicker").value;
@@ -191,7 +236,7 @@
         const todayStr = getTodayString();
 
         if (selectedDate < todayStr && selectedDate !== "") {
-            alert("ไม่สามารถเลือกวันที่ย้อนหลังได้ค่ะ ระบบจะปรับเป็นวันปัจจุบันให้โดยอัตโนมัติ");
+            alert("ไม่สามารถเลือกวันที่ย้อนหลังได้ค่ะ");
             datePicker.value = todayStr;
         }
 
@@ -211,19 +256,8 @@
         }
 
         if (dateInput < todayStr) {
-            alert("ไม่สามารถจองวันย้อนหลังได้ กรุณาเลือกวันที่ใหม่ค่ะ");
+            alert("ไม่สามารถจองวันย้อนหลังได้ค่ะ");
             handleDateChange();
-            return;
-        }
-
-        const now = new Date();
-        const currentHours = String(now.getHours()).padStart(2, '0');
-        const currentMinutes = String(now.getMinutes()).padStart(2, '0');
-        const currentTimeStr = `${currentHours}:${currentMinutes}`;
-
-        if (dateInput === todayStr && selectedTime <= currentTimeStr) {
-            alert("เวลานี้เลยกำหนดแล้ว กรุณาเลือกเวลาอื่นใหม่ค่ะ");
-            handleDateChange(); 
             return;
         }
 
@@ -268,20 +302,18 @@
 
             if (now > bookingDateTime) {
                 localStorage.removeItem(`booking_${userProfile.userId}`);
-                alert("เลยเวลานัดหมายเดิมแล้ว กรุณาทำการนัดหมายใหม่ค่ะ");
                 document.getElementById("booking-form").style.display = "block";
                 document.getElementById("summary-section").style.display = "none";
-                document.getElementById("bookingDetail").value = "";
                 renderTimeButtons();
             } else {
                 document.getElementById("booking-form").style.display = "none";
                 document.getElementById("summary-section").style.display = "block";
                 
                 document.getElementById("summaryText").innerHTML = `
-                    📌 <b>บริการ:</b> ${data.service || 'ทำเล็บเจล'}<br>
+                    📌 <b>บริการ:</b> ${data.service}<br>
                     📅 <b>วันที่นัด:</b> ${data.displayDate}<br>
                     ⏰ <b>เวลานัด:</b> ${data.time} น.<br>
-                    📝 <b>รายละเอียด:</b> ${data.detail || 'ไม่มีรายละเอียดเพิ่มเติม'}<br><br>
+                    📝 <b>รายละเอียด:</b> ${data.detail}<br><br>
                     <small style="color:#666;">📍 พิกัด: Sen Vietnam Spa นครปฐม</small>
                 `;
             }
@@ -304,8 +336,10 @@
         renderTimeButtons(); 
     }
 
-    // เริ่มทำงานเมื่อโหลดสคริปต์
-    initLIFF();
+    // เรียกทำงาน
+    window.onload = function() {
+        initLIFF();
+    };
 </script>
 
 </body>
